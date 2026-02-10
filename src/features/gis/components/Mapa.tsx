@@ -27,7 +27,7 @@ export default function Mapa(props: MapaProps){
             <Map
                 ref={mapRef}
                 initialViewState={{longitude: -102.55, latitude: 23.63, zoom: 4.5}}
-                mapStyle={MAP_STYLE.DARK_MATTER}
+                mapStyle={MAP_STYLE.POSITRON}
                 onClick={onMapClick}
                 interactiveLayerIds={['construcciones-3d']}>
                     {props.datosGeo?.features && props.mostrarRiesgos && (

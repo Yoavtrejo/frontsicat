@@ -6,6 +6,8 @@ import Footer from "@/components/layout/Footer";
 import { SelectField } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
 import { FunnelIcon } from "@heroicons/react/24/outline";
+import Mapa from "@/features/gis/components/Mapa";
+
 
 const OPCIONES_POR_CAPA = {
   "Catastro": ["Predios", "Construcciones", "Lotes", "Zonas Catastrales"],
@@ -45,7 +47,7 @@ export default function MapaPage() {
           <Button 
             onClick={handleFiltrar} 
             isLoading={loading} 
-            variant="primary" // Tu botón ahora es inteligente
+            variant="primary" 
             className="mt-auto"
           >
             {!loading && <FunnelIcon className="w-5 h-5 mr-2 inline" />}
@@ -54,11 +56,15 @@ export default function MapaPage() {
         </aside>
 
         <section className="flex-1 relative bg-slate-950">
-          <Mapa datosGeo={geoData} />
+          <Mapa 
+            datosGeo={geoData} 
+            mostrarRiesgos={filters.capa === "Riesgos"}
+            highlightPiso={null} 
+          />
         </section>
         
       </div>
-      <Footer />
+    {/* <Footer /> */}
     </div>
   );
 }
