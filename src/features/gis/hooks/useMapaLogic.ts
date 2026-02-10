@@ -14,24 +14,24 @@ export const useMapaLogic = (datosGeo: any, highlightPiso: string | number | nul
         Object.entries(MATERIALES_DICT).forEach(([codigo, nombre]) => {
             const baseColor = (customColors && customColors[nombre as string]) || '#94a3b8';
 
-            if(highlightPiso){
+            if (highlightPiso) {
                 const condicionalColor = [
                     'case',
                     highlightPiso === '4'
-                        ? ['>=',['to-number',['coalesce', ['get', 'numero_piso'], 0]],4]
-                        : ['==', ['to.number',['get', 'numero_piso']], highlightPiso],
+                        ? ['>=', ['to-number', ['coalesce', ['get', 'numero_pisos'], 0]], 4]
+                        : ['==', ['to-number', ['coalesce', ['get', 'numero_pisos'], 0]], Number(highlightPiso)],
                     baseColor,
-                    'rgba(10, 126, 47, 0.5)'
+                    'rgba(10, 126, 47, 0.2)' // Un verde sutil para lo que NO está resaltado
                 ];
                 matchExpression.push(codigo, condicionalColor);
-            }else{
+            } else {
                 matchExpression.push(codigo, baseColor);
             }
         });
         
-        matchExpression.push('#0073FF');
+        matchExpression.push('#0073FF'); // Color por defecto final
         return matchExpression;
-    }, [customColors,highlightPiso ]);
+    }, [customColors, highlightPiso]);
 
     //redireccionar automaticamente
     useEffect(() => {

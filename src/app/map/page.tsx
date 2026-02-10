@@ -1,13 +1,12 @@
 "use client";
 
+import { useEffect, useState } from 'react'; // <--- Añadimos hooks de React
 import { useLayerFilter } from "@/features/gis/hooks/useLayerFilter";
 import Navbar from "@/components/layout/Navbar"; 
-import Footer from "@/components/layout/Footer";
 import { SelectField } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
 import { FunnelIcon } from "@heroicons/react/24/outline";
 import Mapa from "@/features/gis/components/Mapa";
-
 
 const OPCIONES_POR_CAPA = {
   "Catastro": ["Predios", "Construcciones", "Lotes", "Zonas Catastrales"],
@@ -17,6 +16,18 @@ const OPCIONES_POR_CAPA = {
 
 export default function MapaPage() {
   const { filters, setFilters, loading, handleFiltrar, geoData } = useLayerFilter();
+  
+  // --- BLOQUE PARA EVITAR HYDRATION ERROR ---
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true); // Solo se activa cuando el componente llega al navegador
+  }, []);
+
+  // Si no ha cargado en el navegador, no mostramos nada para que las 
+  // extensiones no choquen con el HTML del servidor.
+  if (!mounted) return null;
+  // ------------------------------------------
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-slate-950 text-slate-200">
@@ -56,6 +67,7 @@ export default function MapaPage() {
         </aside>
 
         <section className="flex-1 relative bg-slate-950">
+          {/* Solo cargamos el mapa si ya estamos montados */}
           <Mapa 
             datosGeo={geoData} 
             mostrarRiesgos={filters.capa === "Riesgos"}
@@ -64,7 +76,6 @@ export default function MapaPage() {
         </section>
         
       </div>
-    {/* <Footer /> */}
     </div>
   );
 }
