@@ -25,7 +25,7 @@ export const useAuth = () => {
                 document.cookie = `access_token=${data.access}; path=/; max-age=86400; SameSite=Lax`; 
                 localStorage.setItem('user_name', data.user.username);
     
-                router.push('/dashboard');
+                router.push('/home');
         } 
             } catch (err: any) {
                 setError(err.message);
