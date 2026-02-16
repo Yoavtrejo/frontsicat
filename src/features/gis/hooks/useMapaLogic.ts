@@ -1,70 +1,57 @@
-import { useMemo, useState, useEffect, useRef }  from "react";
-import {MapRef} from 'react-map-gl/maplibre';
-import { MATERIALES_DICT } from "@/utils/mappings";
+import { useMemo, useState, useEffect, useRef } from 'react';
+import { MapRef } from 'react-map-gl/maplibre';
+import { MATERIALES_DICT } from '@/utils/mappings';
 
-
-export const useMapaLogic = (datosGeo: any, highlightPiso: string | number | null, customColors?: Record<string, string>) => {
+export const useMapaLogic = (datosGeo: any, highlightPiso: any, customColors: any) => {
     const mapRef = useRef<MapRef>(null);
     const [infoPopup, setInfoPopup] = useState<any | null>(null);
 
-    //colores
     const colorExpression = useMemo(() => {
+        const features = datosGeo?.features || [];
+        if (features.length > 0 && features[0]?.properties?.elemento === "Predios") {
+            return 'rgba(16, 185, 129, 0.6)'; 
+        }
+
         const matchExpression: any[] = ['match', ['get', 'material_tipo']];
-
         Object.entries(MATERIALES_DICT).forEach(([codigo, nombre]) => {
-            const baseColor = (customColors && customColors[nombre as string]) || '#94a3b8';
-
+            const baseColor = customColors?.[nombre as string] || '#94a3b8';
             if (highlightPiso) {
-                const condicionalColor = [
+                const valorH = Number(highlightPiso);
+                matchExpression.push(codigo, [
                     'case',
-                    highlightPiso === '4'
-                        ? ['>=', ['to-number', ['coalesce', ['get', 'numero_pisos'], 0]], 4]
-                        : ['==', ['to-number', ['coalesce', ['get', 'numero_pisos'], 0]], Number(highlightPiso)],
-                    baseColor,
-                    'rgba(10, 126, 47, 0.2)' // Un verde sutil para lo que NO está resaltado
-                ];
-                matchExpression.push(codigo, condicionalColor);
+                    valorH === 4 ? ['>=', ['to-number', ['get', 'numero_pisos']], 4] : ['==', ['to-number', ['get', 'numero_pisos']], valorH],
+                    baseColor, 'rgba(200, 200, 200, 0.2)'
+                ]);
             } else {
                 matchExpression.push(codigo, baseColor);
             }
         });
-        
-        matchExpression.push('#0073FF'); // Color por defecto final
+        matchExpression.push('#94a3b8');
         return matchExpression;
-    }, [customColors, highlightPiso]);
+    }, [customColors, highlightPiso, datosGeo]);
 
-    //redireccionar automaticamente
     useEffect(() => {
-        if(datosGeo?.features?.length > 0 && mapRef.current){
-            const feature = datosGeo.features[0];
-            const coordinates = feature.geometry.type === 'Point'
-                ? feature.geometry.coordinates
-                :feature.geometry.coordinates[0][0][0] || feature.geometry.coordinates[0][0];
-            mapRef.current.flyTo({ 
-                center: [Number(coordinates[0]), Number(coordinates[1])],
-                zoom: 15, pitch: 60, duration: 3000, essential: true 
+        const map = mapRef.current?.getMap();
+        const features = datosGeo?.features;
+        if (!map || !features?.length) return;
+
+        const fit = () => {
+            let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity;
+            features.forEach((f: any) => {
+                const coords = f.geometry.coordinates.flat(Infinity);
+                for (let i = 0; i < coords.length; i += 2) {
+                    if (coords[i] < minLng) minLng = coords[i];
+                    if (coords[i+1] < minLat) minLat = coords[i+1];
+                    if (coords[i] > maxLng) maxLng = coords[i];
+                    if (coords[i+1] > maxLat) maxLat = coords[i+1];
+                }
             });
-        }
+            map.fitBounds([minLng, minLat, maxLng, maxLat], { padding: 50, duration: 2000, essential: true });
+        };
+
+        if (map.isStyleLoaded()) map.once('idle', fit);
+        else map.once('load', fit);
     }, [datosGeo]);
 
-    const onMapClick = (event: any) => {
-        const features = event.features?.[0];
-        if(features?.layer.id === 'construcciones-3d'){
-            setInfoPopup({
-                longitude: event.lngLat.lng,
-                latitude: event.lngLat.lat,
-                properties: features.properties
-            });
-        }else{
-            setInfoPopup(null);
-        }
-    };
-    
-   return {
-        mapRef,
-        infoPopup,
-        setInfoPopup,
-        colorExpression,
-        onMapClick
-    };
+    return { mapRef, colorExpression, infoPopup, setInfoPopup };
 };

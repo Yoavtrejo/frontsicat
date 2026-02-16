@@ -1,18 +1,22 @@
 const API_URL = 'http://127.0.0.1:8000/api';
 
 export const authService = {
-  async login(credentials: any) {
-    const response = await fetch(`${API_URL}/login/`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(credentials),
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.detail || 'Error en la autenticación');
+    async login(email: string, password: string) {
+        const response = await fetch(`${API_URL}/login/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                username: email,
+                password: password
+            }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.detail || 'Credenciales no válidas.');
+        }
+
+        return data; 
     }
-    
-    return response.json();
-  }
 };
