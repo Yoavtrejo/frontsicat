@@ -1,7 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
 import { get } from "idb-keyval"; 
+import { useInegiIndicador } from "@/hooks/useInegi";
 import { MATERIAL_COLORS, PISO_COLORS } from "@/utils/constants"; 
 import { MATERIALES_DICT } from "@/utils/mappings";
+import { features } from "process";
 
 export const useDashboard = () => {
   const [loading, setLoading] = useState(true);
@@ -9,6 +11,106 @@ export const useDashboard = () => {
   const [selectedMaterial, setSelectedMaterial] = useState<string | null>(null);
   const [hoveredPiso, setHoveredPiso] = useState<string | number | null>(null);
   const [capaActiva, setCapaActiva] = useState("");
+  const [selectedFeature, setSelectedFeature] = useState<any | null>(null);
+  const prediosPadron = useInegiIndicador("8999998890", "31");
+  const prediosCartografia = useInegiIndicador("8999998889", "31"); 
+  const poblacion = useInegiIndicador("1002000001", "31");
+  const viviendas = useInegiIndicador("1003000001", "31");
+    //Logica extraer datos de predios
+    const predios_cantidad = useMemo(() => {
+      if(!geoData?.features?.length) return {
+        total_aeropuertos: 0,
+        total_cementerio:0,
+        total_escuela: 0, 
+        total_gasolineria:0,
+        total_invernaderos:0,
+        total_mercado:0,
+        total_plaza:0,
+        total_ruina:0,
+        total_subestaciones:0,
+        total_parque:0,
+        total_templo:0,
+        total_zonas_cultivo:0,
+        total_construcciones:0,
+        total: 0,
+        seleccionada: null
+      }
+
+
+      const features = geoData.features
+        const todo = features.reduce((acc: any,f:any) => {
+          acc.aeropuertos += (f.properties.aeropuerto || 0);
+          acc.cementerios += (f.properties.cementerio || 0);
+          acc.escuelas += (f.properties.escuela || 0);
+          acc.gasolinerias += (f.properties.gasolineria || 0);
+          acc.invernaderos += (f.properties.invernadero || 0);
+          acc.mercados += (f.properties.mercado || 0);
+          acc.plazas += (f.properties.plaza || 0);
+          acc.ruinas += (f.properties.ruina || 0);
+          acc.subestaciones += (f.properties.subestaciones_electricas || 0);
+          acc.templos += (f.properties.templo || 0);
+          acc.parques += (f.properties.parque || 0);
+          acc.cultivos += (f.properties.zonas_cultivo || 0);
+          acc.construcciones += (f.properties.construccion || 0);
+          return acc;
+        },{aeropuertos: 0, cementerios: 0, escuelas: 0, gasolinerias: 0, invernaderos: 0, mercados: 0, plazas: 0, ruinas: 0, subestaciones: 0, templos: 0, parques: 0, cultivos: 0, construcciones: 0});
+        return{
+          total: features.length,
+          globalAeropuertos: todo.aeropuertos,
+          globalCementerios: todo.cementerios,
+          globalEscuelas: todo.escuelas,
+          globalGasolinerias: todo.gasolinerias,
+          globalInvernadero: todo.invernaderos,
+          globalMercados: todo.mercados,
+          globalPlazas: todo.plazas,
+          globalRuinas: todo.ruinas,
+          globalSubestaciones: todo.subestaciones,
+          globalTemplos: todo.templos,
+          globalParques: todo.parques,
+          globalCultivos: todo.cultivos,
+          globalConstrucciones: todo.construcciones,
+          seleccionada: selectedFeature?{
+            Aeropuertos: selectedFeature.properties.aeropuerto,
+            Cementerios: selectedFeature.properties.cementerio,
+            Escuelas: selectedFeature.properties.escuela,
+            Gasolinerias: selectedFeature.properties.gasolineria,
+            Invernaderos: selectedFeature.properties.invernadero,
+            Mercados: selectedFeature.properties.mercado,
+            Plazas: selectedFeature.properties.plaza,
+            Ruinas: selectedFeature.properties.ruina,
+            Subestaciones_Electricas: selectedFeature.properties.subestaciones_electricas,
+            Templos: selectedFeature.properties.templo,
+            Parques: selectedFeature.properties.parque,
+            Cultivos: selectedFeature.properties.cultivo,
+            Construcciones: selectedFeature.properties.construccion, 
+            z_valor: selectedFeature.properties.z_valor,
+            categoria: selectedFeature.properties.categoria,
+            codigo: selectedFeature.properties.codigo
+          }:null
+        };
+    },[geoData,selectedFeature]); 
+    //logica extraer datos manzanas
+    const cantidades = useMemo(() => {
+        if(!geoData?.features?.length) return {total_const: 0, total_panel: 0, total: 0};
+
+        const features = geoData.features
+            const globales = features.reduce((acc: any, f:any) => {
+              acc.paneles += (f.properties.cant_panel || 0);
+              acc.construcciones += (f.properties.cant_const || 0);
+              return acc;
+            },{paneles: 0, construcciones: 0});
+            return {
+              total: features.length,
+              globalPaneles: globales.paneles,
+              globalConstrucciones: globales.construcciones,
+              seleccionada: selectedFeature?{
+                codigo: selectedFeature.properties.codigo,
+                paneles: selectedFeature.properties.cant_panel,
+                construcciones:selectedFeature.properties.cant_const
+              }:null
+            };
+    },[geoData, selectedFeature]);
+    
 
   useEffect(() => {
     const fetchLocalData = async () => {
@@ -20,12 +122,10 @@ export const useDashboard = () => {
         setCapaActiva(nombreCapa);
 
         if (!localData) {
-          console.warn("⚠️ No se encontraron datos en caché.");
           setLoading(false);
           return;
         }
 
-        // 2. Normalizar estructura GeoJSON
         let actualGeoJSON = localData.features ? localData : (localData.results || localData);
         
         if (Array.isArray(actualGeoJSON)) {
@@ -41,7 +141,6 @@ export const useDashboard = () => {
       } catch (error) {
         console.error("❌ Error cargando datos locales:", error);
       } finally {
-        // Un pequeño respiro para el procesador
         setTimeout(() => setLoading(false), 200);
       }
     };
@@ -56,7 +155,7 @@ export const useDashboard = () => {
     const features = geoData.features;
     const total = features.length;
     
-    // Detectamos si es predio (si no tiene material_tipo o es explícito)
+
     const esPredio = features[0]?.properties?.elemento === "Predios" || 
                      !features[0]?.properties?.material_tipo;
 
@@ -64,19 +163,17 @@ export const useDashboard = () => {
       return { total, esPredio: true, materiales: [], pisos: [] };
     }
 
-    // --- PROCESAMIENTO LINEAL (O(n)) ---
-    // Un solo recorrido para contar todo de golpe
     const materialCounts: Record<string, number> = {};
     const pisoCounts: Record<string, number> = { "1": 0, "2": 0, "3": 0, "4": 0 };
 
     for (let i = 0; i < features.length; i++) {
       const props = features[i].properties;
       
-      // Conteo de Materiales
+      //CONTEO DE MATERIALES
       const m = (MATERIALES_DICT as any)[props.material_tipo] || "No especificado";
       materialCounts[m] = (materialCounts[m] || 0) + 1;
 
-      // Conteo de Pisos
+      //CONTEO DE PISOS
       const p = parseInt(props.numero_pisos) || 1;
       if (p >= 4) pisoCounts["4"]++;
       else pisoCounts[p.toString()] = (pisoCounts[p.toString()] || 0) + 1;
@@ -110,5 +207,22 @@ export const useDashboard = () => {
     };
   }, [geoData, selectedMaterial, stats.esPredio]);
 
-  return { loading, filteredData, stats, selectedMaterial, setSelectedMaterial, hoveredPiso, setHoveredPiso, capaActiva };
+  return { 
+    loading, 
+    filteredData, 
+    stats, 
+    selectedMaterial, 
+    setSelectedMaterial, 
+    hoveredPiso, 
+    setHoveredPiso, 
+    capaActiva,
+    predios_cantidad,
+    cantidades,
+    setSelectedFeature,
+    selectedFeature,
+    poblacion,
+    viviendas,
+    prediosCartografia,
+    prediosPadron
+   };
 };

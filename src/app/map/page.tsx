@@ -9,7 +9,7 @@ import { FunnelIcon } from "@heroicons/react/24/outline";
 import Mapa from "@/features/gis/components/Mapa";
 
 const OPCIONES_POR_CAPA = {
-  "Catastro": ["Predios", "Construcciones", "Lotes", "Zonas Catastrales"],
+  "Catastro": ["Predios", "Construcciones", "Manzanas"],
   "Riesgos": ["Inundaciones", "Zonas Sísmicas", "Deslaves"],
   "Vialidades": ["Avenidas Principales", "Calles Secundarias", "Ciclovías"]
 };
@@ -67,7 +67,8 @@ export default function MapaPage() {
           <Mapa 
             datosGeo={geoData || { type: "FeatureCollection", features: [] }} 
             mostrarRiesgos={!!geoData?.features?.length}
-            highlightPiso={null} 
+            highlightPiso={null}
+             onFeatureSelect={() => {}}
           />
         </section>
         

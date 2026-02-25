@@ -1,120 +1,156 @@
 'use client';
 
-import { Map, Source, Layer, NavigationControl, Popup } from 'react-map-gl/maplibre';
-import { useState, useMemo } from 'react'; 
-import "maplibre-gl/dist/maplibre-gl.css";
-import { useMapaLogic } from '../hooks/useMapaLogic';
-import { MATERIALES_DICT } from "@/utils/mappings";
+import React, { useState } from 'react';
+import Map, { Source, Layer, NavigationControl, Popup } from 'react-map-gl/maplibre';
+import 'maplibre-gl/dist/maplibre-gl.css';
+import { useMapaLogic } from '../hooks/useMapaLogic'; 
 
 const MAP_STYLES = {
-    POSITRON: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
-    DARK: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
-    VOYAGER: "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json"
+    carto_dark: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+    carto_light: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+    osm: 'https://tiles.openfreemap.org/styles/liberty',
 };
 
-export default function Mapa(props: any) {
-    const [estiloActivo, setEstiloActivo] = useState(MAP_STYLES.POSITRON);
+interface MapaProps {
+  datosGeo: any;
+  highlightPiso?: string | number | null;
+  mostrarRiesgos?: boolean;
+  customColors?: Record<string, string>;
+  onFeatureSelect: (feature: any | null) => void;
+}
 
-    const { mapRef, infoPopup, setInfoPopup, colorExpression } = 
-        useMapaLogic(props.datosGeo, props.highlightPiso, props.customColors);
+export default function Mapa({ datosGeo, highlightPiso, customColors, mostrarRiesgos, onFeatureSelect }: MapaProps) {
+    const [baseStyle, setBaseStyle] = useState(MAP_STYLES.carto_dark);
+    
+    const { mapRef, colorExpression, infoPopup, setInfoPopup } = useMapaLogic(
+        datosGeo, 
+        highlightPiso, 
+        customColors,
+    );
 
-    const geoJsonData = useMemo(() => {
-        if (!props.datosGeo) return { type: "FeatureCollection", features: [] };
-        if (props.datosGeo.results) return props.datosGeo.results;
-        return props.datosGeo;
-    }, [props.datosGeo]);
-
-    const tieneDatos = geoJsonData?.features?.length > 0;
+    const esCapaPredios = datosGeo?.features?.[0]?.properties?.z_valor !== undefined;
 
     return (
-        <div className="w-full h-full relative">
-            <div className="absolute top-4 left-4 z-10 flex flex-col gap-2 bg-white/90 p-2 rounded-xl shadow-lg backdrop-blur-md border border-slate-200">
-                <p className="text-[10px] font-bold text-slate-500 uppercase px-1">Mapa Base</p>
-                <div className="flex gap-1">
-                    {Object.entries(MAP_STYLES).map(([name, url]) => (
-                        <button 
-                            key={name}
-                            onClick={() => setEstiloActivo(url)}
-                            className={`px-3 py-1.5 text-[11px] font-medium rounded-lg transition-all ${
-                                estiloActivo === url 
-                                ? 'bg-blue-600 text-white shadow-md' 
-                                : 'bg-transparent text-slate-600 hover:bg-slate-100'
-                            }`}
-                        >
-                            {name === 'DARK' ? 'Oscuro' : name === 'POSITRON' ? 'Claro' : 'Voyager'}
-                        </button>
-                    ))}
-                </div>
+        <div className="relative w-full h-full">
+            <div className="absolute top-4 left-4 z-10 bg-slate-900/80 backdrop-blur-sm p-2 rounded-xl border border-slate-700 shadow-xl">
+                <select 
+                    onChange={(e) => setBaseStyle(e.target.value)} 
+                    className="bg-transparent text-xs font-bold text-slate-200 outline-none cursor-pointer"
+                >
+                    <option value={MAP_STYLES.carto_dark}>Oscuro (Carto)</option>
+                    <option value={MAP_STYLES.carto_light}>Claro (Carto)</option>
+                    <option value={MAP_STYLES.osm}>OpenStreetMap</option>
+                </select>
             </div>
 
             <Map
                 ref={mapRef}
-                initialViewState={{ longitude: -101.62, latitude: 20.95, zoom: 12, pitch: 60 }}
-                mapStyle={estiloActivo} 
+                initialViewState={{
+                    longitude: -89.62,
+                    latitude: 20.96,
+                    zoom: 15, 
+                    pitch: 45 
+                }}
+                style={{ width: '100%', height: '100%' }}
+                mapStyle={baseStyle}
                 onClick={(e) => {
-                    const feat = e.features && e.features[0];
-                    if (feat) {
-                        setInfoPopup({ 
-                            longitude: e.lngLat.lng, 
-                            latitude: e.lngLat.lat, 
-                            properties: feat.properties 
+                    const feature = e.features && e.features[0];
+                    if (feature) {
+                        setInfoPopup({
+                            lng: e.lngLat.lng,
+                            lat: e.lngLat.lat,
+                            ...feature.properties
                         });
+                        onFeatureSelect(feature);
                     } else {
                         setInfoPopup(null);
+                        onFeatureSelect(null);
                     }
                 }}
-                interactiveLayerIds={['construcciones-3d']}
+                interactiveLayerIds={['capa-3d-extrusion']}
             >
-                {tieneDatos && (
-                    <Source 
-                        id="catastro-data" 
-                        type="geojson" 
-                        data={geoJsonData}
-                        key={`source-${geoJsonData.features.length}-${props.highlightPiso}`}
-                    >
+                <NavigationControl position="bottom-right" />
+
+                {datosGeo?.features?.length > 0 && (
+                    <Source id="datos-source" type="geojson" data={datosGeo}>
                         <Layer
-                            id="construcciones-3d"
+                            id="capa-3d-extrusion"
                             type="fill-extrusion"
                             paint={{
-                                'fill-extrusion-color': colorExpression as any,
-                                'fill-extrusion-height': [
-                                    'interpolate', ['linear'], ['zoom'],
-                                    14, 0,
-                                    15, ['*', ['to-number', ['coalesce', ['get', 'numero_pisos'], 1]], 3.5]
-                                ],
+                                'fill-extrusion-height': esCapaPredios 
+                                    ? ['get', 'z_valor'] 
+                                    : ['*', ['get', 'numero_pisos'], 3.5],
                                 'fill-extrusion-base': 0,
-                                'fill-extrusion-opacity': 0.85,
-                                'fill-extrusion-color-transition': { duration: 300 }
+                                'fill-extrusion-color': colorExpression as any, 
+                                'fill-extrusion-opacity': 0.9,
+                                'fill-extrusion-vertical-gradient': true, 
+                            }}
+                        />
+                        <Layer
+                            id="capa-linea"
+                            type="line"
+                            paint={{
+                                'line-color': '#ffffff',
+                                'line-opacity': 0.2,
+                                'line-width': 1
                             }}
                         />
                     </Source>
                 )}
 
                 {infoPopup && (
-                    <Popup 
-                        longitude={infoPopup.longitude} 
-                        latitude={infoPopup.latitude} 
+                    <Popup
+                        longitude={infoPopup.lng}
+                        latitude={infoPopup.lat}
                         onClose={() => setInfoPopup(null)}
-                        closeButton={false}
                         anchor="bottom"
-                        offset={10}
+                        closeButton={false}
+                        className="z-50"
+                        maxWidth="300px"
                     >
-                        <div className="p-2 text-[11px] leading-tight min-w-[120px] bg-white text-slate-800">
-                            <h3 className="font-bold border-b mb-1 pb-1 text-blue-700 uppercase tracking-tighter">
-                                Detalle Urbano
-                            </h3>
-                            <p className="mb-1"><strong>Pisos:</strong> {infoPopup.properties.numero_pisos}</p>
-                            <p className="text-slate-600 italic">
-                                { (MATERIALES_DICT as any)[infoPopup.properties.material_tipo] || 
-                                  infoPopup.properties.material_nombre || "No especificado" }
+                        <div className="bg-slate-900 text-white p-3 rounded-xl text-xs shadow-2xl border border-slate-700 min-w-[150px]">
+                            <p className="font-black text-blue-400 uppercase mb-2 border-b border-slate-800 pb-1">
+                                {infoPopup.elemento || "Información del Predio"}
                             </p>
+                            
+                            <div className="space-y-1">
+                                <p><span className="text-slate-400">Código:</span> <span className="font-mono">{infoPopup.codigo}</span></p>
+                                
+                                {esCapaPredios ? (
+                                    <div className="mt-2 pt-2 border-t border-slate-800/50">
+                                        <p className="text-[10px] text-slate-500 font-bold uppercase mb-1">Equipamiento Cercano</p>
+                                        <div className="grid grid-cols-1 gap-1">
+                                            {infoPopup.escuela > 0 && <p className="text-emerald-400 flex items-center gap-1"> Escuela</p>}
+                                            {infoPopup.parque > 0 && <p className="text-emerald-400 flex items-center gap-1"> Parque</p>}
+                                            {infoPopup.templo > 0 && <p className="text-emerald-400 flex items-center gap-1"> Templo</p>}
+                                            {infoPopup.aeropuerto > 0 && <p className="text-emerald-400 flex items-center gap-1"> Aeropuerto</p>}
+                                            {infoPopup.cementerio > 0 && <p className="text-emerald-400 flex items-center gap-1"> Cementerio</p>}
+                                            {infoPopup.gasolineria > 0 && <p className="text-emerald-400 flex items-center gap-1"> Gasolinerias</p>}
+                                            {infoPopup.invernadero > 0 && <p className="text-emerald-400 flex items-center gap-1"> Invernaderos</p>}
+                                            {infoPopup.mercado > 0 && <p className="text-emerald-400 flex items-center gap-1"> Mercado</p>}
+                                            {infoPopup.plaza > 0 && <p className="text-emerald-400 flex items-center gap-1"> Plaza/Centro Comercial</p>}
+                                            {infoPopup.ruina > 0 && <p className="text-emerald-400 flex items-center gap-1"> Ruina</p>}
+                                            {infoPopup.subestaciones_electricas > 0 && <p className="text-emerald-400 flex items-center gap-1"> Subestaciones</p>}
+                                            {infoPopup.construccion > 0 && <p className="text-blue-300">🏗️ {infoPopup.construccion} Construcciones</p>}
+                                            {infoPopup.zonas_cultivo > 0 && <p className="text-emerald-400 flex items-center gap-1"> Zona de cultivo</p>}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="mt-2 pt-2 border-t border-slate-800/50">
+                                        <p><span className="text-slate-400">Material:</span> {infoPopup.material_nombre}</p>
+                                        <p><span className="text-slate-400">Niveles:</span> {infoPopup.numero_pisos}</p>
+                                    </div>
+                                )}
+                                
+                                <div className="mt-2 py-1 px-2 bg-blue-500/10 rounded-md border border-blue-500/20 inline-block">
+                                    <p className="font-bold text-blue-400">
+                                        {esCapaPredios ? `${infoPopup.z_valor?.toFixed(2)}m Altura` : `${(infoPopup.numero_pisos * 3.5).toFixed(1)}m Est.`}
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </Popup>
                 )}
-                
-                <div className="absolute bottom-6 right-6">
-                    <NavigationControl showCompass={true} />
-                </div>
             </Map>
         </div>
     );
