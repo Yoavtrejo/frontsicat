@@ -30,7 +30,7 @@ export const useAuth = () => {
 
                 console.log("Login exitoso. Bienvenido:", data.user.username);
                 
-                router.push('/home'); 
+                router.push('/dashboard'); 
             }
         } catch (err: any) {
             setError(err.message || 'No se pudo conectar con el servidor.');

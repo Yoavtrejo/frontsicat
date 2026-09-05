@@ -54,7 +54,7 @@ export const generateUserReport = (data: ReportData) => {
   });
 
   // 4. Pie de página
-  const pageCount = doc.internal.getNumberOfPages();
+  const pageCount = doc.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
     doc.setFontSize(8);

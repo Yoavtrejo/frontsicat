@@ -33,7 +33,7 @@ export const useLayerFilter = () => {
       const opcionLimpia = normalizar(filters.subOpcion);
       const endpoint = endpoints [opcionLimpia] || "predioss"
 
-      const data = await gisService.fetchLayerData(endpoint, token);
+      const data = await gisService.fetchLayerData(endpoint);
       
       const rawFeatures = data.features || data.results?.features || (Array.isArray(data.results) ? data.results : []);
 

@@ -1,22 +1,28 @@
-const API_URL = 'http://127.0.0.1:8000/api';
+import { fetchApi } from '@/lib/api';
 
 export const authService = {
-    async login(email: string, password: string) {
-        const response = await fetch(`${API_URL}/login/`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                username: email,
-                password: password
-            }),
-        });
+  async login(username: string, password: string) {
+    const data = await fetchApi<{
+      access: string;
+      refresh: string;
+      user: {
+        id: number;
+        username: string;
+        email: string;
+        rol: string;
+      };
+    }>('/login/', {
+      method: 'POST',
+      body: JSON.stringify({ username, password }),
+    });
 
-        const data = await response.json();
+    return data;
+  },
 
-        if (!response.ok) {
-            throw new Error(data.detail || 'Credenciales no válidas.');
-        }
-
-        return data; 
-    }
+  async refreshToken(refresh: string) {
+    return fetchApi<{ access: string }>('/refresh/', {
+      method: 'POST',
+      body: JSON.stringify({ refresh }),
+    });
+  },
 };

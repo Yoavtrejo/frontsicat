@@ -32,8 +32,8 @@ export default function HomePage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {proyectosConDatos.map((proy, idx) => (
-              <div key={idx} className="group cursor-pointer transition-all duration-300 transform hover:-translate-y-3" onClick={() => setSelectedProject(proy)}>
-                <Card proy={proy} />
+              <div key={idx} className="group cursor-pointer transition-all duration-300 transform hover:-translate-y-3">
+                <Card proy={proy} onClick={() => setSelectedProject(proy)} />
                 <div className="mt-4 flex gap-2">
                    <IndicatorDots />
                 </div>
