@@ -8,12 +8,13 @@ export async function getIndicadorINEGI(
     estado: string
 ) {
     if (!TOKEN) {
-        throw new Error("Falta el token de INEGI");
+        console.warn('NEXT_PUBLIC_INEGI_TOKEN no configurado, retornando datos mock');
+        return { series: [{ datos: [] }] };
     }
 
-        const url = `${BASE_URL}/INDICATOR/${indicador}/es/${estado}/true/BISE/2.0/${TOKEN}?type=json`;
+    const url = `${BASE_URL}/INDICATOR/${indicador}/es/${estado}/true/BISE/2.0/${TOKEN}?type=json`;
 
-        const res = await fetch(url);
+    const res = await fetch(url);
 
     if (!res.ok) {
         throw new Error("Error al consultar la API de INEGI");
