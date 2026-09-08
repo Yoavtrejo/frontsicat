@@ -6,10 +6,17 @@ export function useInegiIndicador(indicador: string, entidad: string) {
 
   useEffect(() => {
     getIndicadorINEGI(indicador, entidad).then(data => {
-      const observaciones = data.Series[0].OBSERVATIONS;
-      const ultimo = observaciones.at(-1); // ✅ ahora sí es array
+      const series = data.Series ?? data.series ?? [];
+      const observaciones = series[0]?.OBSERVATIONS ?? series[0]?.observaciones ?? [];
+      const ultimo = observaciones.at(-1);
 
-      setValor(Number(ultimo.OBS_VALUE));
+      if (ultimo?.OBS_VALUE) {
+        setValor(Number(ultimo.OBS_VALUE));
+      } else if (ultimo?.OBS_VALUE === 0) {
+        setValor(0);
+      }
+    }).catch(() => {
+      // Silenciar error si no hay token o falla la API
     });
   }, [indicador, entidad]);
 

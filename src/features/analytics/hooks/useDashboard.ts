@@ -19,20 +19,20 @@ export const useDashboard = () => {
     //Logica extraer datos de predios
     const predios_cantidad = useMemo(() => {
       if(!geoData?.features?.length) return {
-        total_aeropuertos: 0,
-        total_cementerio:0,
-        total_escuela: 0, 
-        total_gasolineria:0,
-        total_invernaderos:0,
-        total_mercado:0,
-        total_plaza:0,
-        total_ruina:0,
-        total_subestaciones:0,
-        total_parque:0,
-        total_templo:0,
-        total_zonas_cultivo:0,
-        total_construcciones:0,
         total: 0,
+        globalAeropuertos: 0,
+        globalCementerios: 0,
+        globalEscuelas: 0,
+        globalGasolinerias: 0,
+        globalInvernadero: 0,
+        globalMercados: 0,
+        globalPlazas: 0,
+        globalRuinas: 0,
+        globalSubestaciones: 0,
+        globalTemplos: 0,
+        globalParques: 0,
+        globalCultivos: 0,
+        globalConstrucciones: 0,
         seleccionada: null
       }
 
@@ -91,7 +91,12 @@ export const useDashboard = () => {
     },[geoData,selectedFeature]); 
     //logica extraer datos manzanas
     const cantidades = useMemo(() => {
-        if(!geoData?.features?.length) return {total_const: 0, total_panel: 0, total: 0};
+        if(!geoData?.features?.length) return {
+          total: 0,
+          globalPaneles: 0,
+          globalConstrucciones: 0,
+          seleccionada: null
+        };
 
         const features = geoData.features
             const globales = features.reduce((acc: any, f:any) => {

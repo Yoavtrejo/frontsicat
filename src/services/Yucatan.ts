@@ -9,7 +9,7 @@ export async function getIndicadorINEGI(
 ) {
     if (!TOKEN) {
         console.warn('NEXT_PUBLIC_INEGI_TOKEN no configurado, retornando datos mock');
-        return { series: [{ datos: [] }] };
+        return { Series: [{ OBSERVATIONS: [] }] };
     }
 
     const url = `${BASE_URL}/INDICATOR/${indicador}/es/${estado}/true/BISE/2.0/${TOKEN}?type=json`;
